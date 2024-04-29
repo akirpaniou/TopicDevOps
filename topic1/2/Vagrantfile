@@ -1,0 +1,68 @@
+Vagrant.configure("2") do |config|
+
+    config.vm.define "static_server" do |static_server|
+        static_server.vm.box = "generic/debian11"
+        static_server.vm.network "private_network", ip: "192.168.56.3"
+
+        static_server.vm.synced_folder  ".", "/vagrant", disabled: true
+        
+        config.vm.provider "virtualbox" do |vb|
+            vb.memory = 1024
+            vb.cpus   = 1
+        end
+
+        static_server.vm.provision "shell", inline: <<-SHELL
+            sudo apt-get update
+            sudo apt-get install -y php-common libapache2-mod-php php-cli
+            sudo apt-get install -y apache2
+            sudo apt-get update
+        
+            sudo mkdir -p /var/www/html   
+            sudo chown vagrant:vagrant /var/www/html
+
+            sudo systemctl restart apache2
+
+        SHELL
+
+        static_server.vm.provision "file", 
+            source: "index.html", 
+            destination: "/tmp/"
+
+        static_server.vm.provision "shell",
+            inline: "mv /tmp/index.html /var/www/html/"
+    end
+
+    config.vm.define "dynamic_server" do |dynamic_server|
+        dynamic_server.vm.box = "generic/debian11"
+        dynamic_server.vm.network "private_network", ip: "192.168.56.4"
+
+        dynamic_server.vm.synced_folder  ".", "/vagrant", disabled: true
+        
+        config.vm.provider "virtualbox" do |vb|
+            vb.memory = 1024
+            vb.cpus   = 1
+        end
+
+        dynamic_server.vm.provision "shell", inline: <<-SHELL
+            sudo apt-get update
+            sudo apt-get install -y php-common libapache2-mod-php php-cli
+            sudo apt-get install -y apache2
+            sudo apt-get update
+        
+            sudo mkdir -p /var/www/html   
+            sudo chown vagrant:vagrant /var/www/html
+            sudo rm /var/www/html/index.html
+
+            sudo systemctl restart apache2
+
+        SHELL
+
+        dynamic_server.vm.provision "file", 
+            source: "index.php", 
+            destination: "/tmp/"
+
+        dynamic_server.vm.provision "shell",
+            inline: "mv /tmp/index.php /var/www/html/"
+
+    end
+end
