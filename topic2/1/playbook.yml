@@ -1,0 +1,79 @@
+---
+- name: Configure virtuale machine
+  become: true
+  hosts: all
+
+  tasks:
+    - name: Update apt cache
+      become: true
+      apt: 
+        update_cache: true
+
+    - name: Install ufw
+      become: true
+      apt:
+        name: ufw
+        state: present
+
+    - name: Install PHP and related packages
+      apt:
+        name:
+          - php-common
+          - libapache2-mod-php
+          - php-cli
+        state: present
+        
+    - name: Install Apache2
+      become: true
+      apt:
+        name: apache2
+        state: present
+
+    - name: Start Apache2 service
+      become: true
+      service:
+        name: apache2
+        state: started
+    
+    - name: Copy index.php file from local to remote
+      ansible.posix.synchronize:
+        src: index.php
+        dest: /tmp/
+
+    - name: Copy index.html file from local to remote
+      ansible.posix.synchronize:
+        src: index.html
+        dest: /tmp/
+
+    - name: Copy index.php from tmp on machine
+      ansible.builtin.copy:
+        src: /tmp/index.php
+        dest: /var/www/html
+
+    - name: Copy index.html from tmp on machine
+      ansible.builtin.copy:
+        src: /tmp/index.html
+        dest: /var/www/html
+
+    - name: Listen 81 port
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        line: 'Listen 81'
+        state: present
+
+    - name: Configure virtual host for port 81
+      ansible.builtin.copy:
+        dest: /etc/apache2/sites-available/000-default.conf
+        content: |
+          <VirtualHost *:81>
+              ServerAdmin webmaster@localhost
+              DocumentRoot /var/www/html/index.php
+
+              ErrorLog ${APACHE_LOG_DIR}/error.log
+              CustomLog ${APACHE_LOG_DIR}/access.log combined
+          </VirtualHost>
+
+    - name: Restart apache
+      service:
+        name: apache2
+        state: restarted

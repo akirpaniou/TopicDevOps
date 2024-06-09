@@ -1,0 +1,48 @@
+---
+- name: Configure VM3
+  become: true
+  hosts: vm3
+
+  tasks:
+    - name: Update apt cache
+      become: true
+      apt: 
+        update_cache: true
+
+    - name: Install ufw
+      become: true
+      apt:
+        name: ufw
+        state: present
+        
+    - name: Install Nginx
+      become: true
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start Nginx service
+      become: true
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Copy reverse_proxy file from local to remote
+      ansible.posix.synchronize:
+        src: reverse_proxy.conf
+        dest: /etc/nginx/sites-available/
+    
+    - name: Create symbolic link for Nginx configuration
+      become: true
+      file:
+        src: /etc/nginx/sites-available/reverse_proxy.conf
+        dest: /etc/nginx/sites-enabled/reverse_proxy.conf
+        state: link
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded

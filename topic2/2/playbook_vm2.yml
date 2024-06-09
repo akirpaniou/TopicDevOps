@@ -1,0 +1,51 @@
+---
+- name: Configure VM2
+  become: true
+  hosts: vm2
+
+  tasks:
+    - name: Update apt cache
+      become: true
+      apt: 
+        update_cache: true
+
+    - name: Install ufw
+      become: true
+      apt:
+        name: ufw
+        state: present
+
+    - name: Install PHP and related packages
+      apt:
+        name:
+          - php-common
+          - libapache2-mod-php
+          - php-cli
+        state: present
+        
+    - name: Install Apache2
+      become: true
+      apt:
+        name: apache2
+        state: present
+
+    - name: Start Apache2 service
+      become: true
+      service:
+        name: apache2
+        state: started
+    
+    - name: Copy index.php file from local to remote
+      ansible.posix.synchronize:
+        src: index.php
+        dest: /tmp/
+
+    - name: Copy index.php from tmp on machine
+      ansible.builtin.copy:
+        src: /tmp/index.php
+        dest: /var/www/html
+
+    - name: Delete html file
+      ansible.builtin.file:
+        path: /var/www/html/index.html
+        state: absent

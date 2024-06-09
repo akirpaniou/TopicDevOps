@@ -1,0 +1,38 @@
+---
+- name: Configure VM1
+  become: true
+  hosts: vm1
+
+  tasks:
+    - name: Update apt cache
+      become: true
+      apt: 
+        update_cache: true
+
+    - name: Install ufw
+      become: true
+      apt:
+        name: ufw
+        state: present
+        
+    - name: Install Apache2
+      become: true
+      apt:
+        name: apache2
+        state: present
+
+    - name: Start Apache2 service
+      become: true
+      service:
+        name: apache2
+        state: started
+    
+    - name: Copy index.html file from local to remote
+      ansible.posix.synchronize:
+        src: index.html
+        dest: /tmp/
+
+    - name: Copy index.html from tmp on machine
+      ansible.builtin.copy:
+        src: /tmp/index.html
+        dest: /var/www/html
