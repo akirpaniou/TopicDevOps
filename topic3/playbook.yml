@@ -1,0 +1,8 @@
+---
+- name: Setup
+  hosts: jenkins.vm
+  become: true
+
+  roles:
+    - geerlingguy.java
+    - geerlingguy.jenkins

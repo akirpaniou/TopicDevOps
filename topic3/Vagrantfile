@@ -1,0 +1,32 @@
+jenkins_ip = "192.168.56.3"
+jenkins_admin_username = "admin"
+jenkins_admin_password = "admin"
+
+
+Vagrant.configure("2") do |config|
+    
+    config.vm.box = "generic/debian11"
+    config.vm.synced_folder ".", "/vagrant", disabled: false
+
+    config.vm.provider "virtualbox" do |vb|
+        vb.memory = "1024"
+        vb.cpus = 1
+    end
+
+    config.vm.define "jenkins.vm" do |jenkins|
+        jenkins.vm.network "private_network", ip: jenkins_ip
+        jenkins.vm.provision "shell", inline: <<-SHELL
+            sudo apt-get update 
+            apt-get install -y sshpass
+
+            sed -i "s/^PasswordAuthentication no\$/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+            service sshd restart
+        SHELL
+        jenkins.vm.hostname = "jenkins.vm"
+        jenkins.vm.provider("virtualbox") { |vb| vb.memory = 2048 }
+        jenkins.vm.provision "ansible_local" do |ansible|
+            ansible.playbook = "playbook.yml"
+            ansible.inventory_path = "inventory.ini"
+        end
+    end
+end
